@@ -44,6 +44,10 @@ executing the test suite.
 * `make start` will start the service at http://localhost:5000/
 * `make test` will run the `unittest` suite.
 
+Be sure your `virtualenv` environment is activated when running the above
+commands. Otherwise, Python will not be able to locate the required
+dependencies.
+
 Usage
 -----
 
