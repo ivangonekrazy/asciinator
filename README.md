@@ -69,6 +69,14 @@ Where `style-name` is one of the following:
 * `and_or`
 * `black_and_white`
 
+Examples (run from the repo root directory):
+
+```
+curl -XPOST -F "file=@sample/sample.jpg" http://localhost:5000
+curl -XPOST -F "file=@sample/sample.jpg" -F "style=black_and_white" http://localhost:5000
+curl -XPOST -F "file=@sample/sample.jpg" -F "style=dashy" http://localhost:5000
+```
+
 Note that images with dimensions over 3000 pixels will be scaled down
 before the ASCII art conversion.
 
