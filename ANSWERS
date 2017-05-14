@@ -6,10 +6,11 @@ operation.
 
 I could also add metrics tracking with tools like StatsD. The ASCII conversion
 operation could also be run in Python profiling tools like cProfile to gather
-more granular information.
+more granular information like memory usage and call times.
 
-I would also say it's important to track the logs and metrics from live usage
-rather than to rely on benchmarks.
+While I would also say it's important to track the logs and metrics from
+live usage rather than to rely on benchmarks, tools like JMeter and Tsung
+can be used to get an idea about the overall performance of the service.
 
 
 
@@ -17,12 +18,12 @@ rather than to rely on benchmarks.
 
 The first step would be to run this service in an application server like
 uWSGI or Apache's mod_wsgi and spawn multiple children. This would allow at
-least more concurrnt connections to the service.
+least more concurrent connections to the service.
 
 The second step would be to instantiate multiple hosts each running an
-application service (in turn running multiple children). These hosts would
+application service (each running multiple children). These hosts would
 be placed behind a load-balancer. I would do this once we see too much memory,
-CPU, or disk IO pressure for a single host to handle.
+CPU, or disk IO pressure on a single host.
 
 I would also think about decoupling the file upload and conversion steps further.
 The web request could return immediately after the file upload and include
@@ -35,18 +36,21 @@ queue for conversion workers to consume.
 
 3. How would your design change if you needed to store the uploaded images?
 
-Instead of storing a temporary file locally, I'd push the image to S3
-after conversion. I feel it's hard to say more about this without knowing
-how we intend to use the stored image files afterwards.
+I feel it's hard to say more about this without knowing how we intend to use
+the stored image files afterwards.
+
+One change I'd make is to push the source image to S3 before conversion,
+instead of saving a local tempfile. In this case, S3 would also act as
+part of the layer that persists the conversion job.
 
 
 
 4. What are the cost factors of your scaling choices? Which parts of your
 solution would grow in cost the fastest?
 
-In the current implementation, and pursuing scaling strategies like
-using more hosts behind a load balances, I believe multiple hosts will be
-the most costly part in an environment like AWS.
+In the current implementation, I'd also guess that the hosts responsible for
+performing the conversion will likely be the initial processing and memory
+bottleneck. Adding more hosts for this role will likely be the bigger cost driver.
 
 
 
@@ -62,7 +66,9 @@ conversion. Multiple file upload hosts could push image files to S3 and have
 them represented as a conversion job somewhere. Workers would pick up these
 conversion jobs and notify the user upon completion.
 
-This strategy assumes S3 is a more reliable data store than local disk.
+This strategy assumes S3 and network access is more reliable than local disk
+storage.
+
 
 
 6. How given a change to the algorithm what issues do you foresee when
@@ -73,10 +79,10 @@ in #2 and #5, we may run into the following issues:
 
 - Changes in worklaod: The new algorithm may change compute, network, or storage
   requirements. This may require changes to how resources are allocated
-  in the solution.
+  for the solution.
 
 - Incompatible jobs: A change in algorithm may require a change in how the
-  jobs are represented in the queue which may require changes in the workers.
+  jobs are represented in the queue, which may require changes in the workers.
 
   We can mitigate this by versioning jobs or by temporarily placing the old
   and new job versions in two separate queues. The deprecated version of jobs
@@ -97,7 +103,7 @@ Producers and consumers in both providers will process their jobs. Results
 from the new provider environment are validated against the results from the
 same job in the old provider. Results from the new provider are discarded.
 Debug any deltas between results from the old and new providers. Do this until
-there are no differences between the providers.
+there are no differences between the results from each provider.
 
 As we gain more confidence in the new environment we can increase the percentage
 of requests copied to the new provider, carefully watching performance metrics.
