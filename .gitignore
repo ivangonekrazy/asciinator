@@ -2,3 +2,4 @@
 env/
 asciinator*.tar.gz
 asciinator*.zip
+.DS_Store
